@@ -1,4 +1,6 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, string::ParseError};
+use url::Url;
+
 use crate::response::{ Response, ResponseType } ;
 
 
@@ -16,7 +18,8 @@ pub enum Method {
 
 pub struct Route {
     url: String,
-    exec: fn() -> Response
+    exec: Box<dyn Fn(String) -> Response>,
+    query_params: Option<HashMap<String, String>>,
 }
 
 pub struct Routes {
@@ -31,7 +34,7 @@ pub struct RouteRegistry {
 pub fn get_routes_for_method(routes: &Routes, url: &str) -> Response{
     for route in &routes.routes {
         if route.url.eq(url) {
-            return (route.exec)() ;
+            return (route.exec)(String::from(url)) ;
         }
     }
     return Response::err(String::from("404"), ResponseType::Raw, Some(String::from("404")));
@@ -53,10 +56,23 @@ impl Router {
         }
     }
 
-    pub fn register(&mut self, url: &str, method: Method, exec: fn() -> Response) {
+    pub fn register(&mut self, url: &str, method: Method, exec: fn(String) -> Response) {
+        let route_url = String::from(url);
+        let parsed_url = Url::parse(url);
+        let query_pairs = match parsed_url{
+            //TODO: WTF IS A BORROWWWWWW
+            Ok(params) => params.query_pairs(),
+            Err(e) => panic!("OH NO :___")
+        };
+        let query_params = query_pairs.fold(
+                    HashMap::new(), |mut acc, (key, value)| {
+                    acc.insert(key.into_owned(), value.into_owned());
+                    acc
+        });
         let route = Route {
-            url: String::from(url),
-            exec,
+            url: route_url,
+            exec:  Box::new(move | ur: String| exec(ur)),
+            query_params: Some(query_params)
         };
 
         match self.route_registry.data.get_mut(&method) {

@@ -6,20 +6,24 @@ use crate::response::* ;
 
 fn main() {
     let mut api = sano::Sano::new("localhost", 7879) ;
+    /*
     api.router.register(
         "/api",
         router::Method::POST,
-        | | Response::ok(String::from("HI"), ResponseType::Raw, None)
+        | url | Response::ok(String::from("HI"), ResponseType::Raw, None)
     );
     api.router.register(
         "/hello", 
         router::Method::GET,
-        | | Response::ok(String::from("hi.html"), ResponseType::HTML, None)
+        | url | Response::ok(String::from("hi.html"), ResponseType::HTML, None)
     );
+    */
     api.router.register(
-        "/sodu", 
+        "/calculate?op=1+1", 
         router::Method::GET,
-        | | Response::ok(String::from("this.html"), ResponseType::HTML, None)
+        | url | {
+            Response::ok(url, ResponseType::Raw, None)
+        }
     );
     api.run_server() ;
 }

@@ -1,14 +1,13 @@
 use std::{
-    fs,
     io::{prelude::*, BufReader},
     net::{TcpListener, TcpStream},
 };
 
-pub struct server {
+pub struct Server {
     listener : TcpListener,
 }
 
-impl server {
+impl Server {
     pub fn new(ipaddr : &String , port: u16) -> Self{
         let address = format!("{}:{}", ipaddr, port);
         let listener = TcpListener::bind(address).expect("Failed to bind to the specified address");
@@ -16,13 +15,13 @@ impl server {
     }
 
     pub fn run_server<F> (&self, f: F) 
-    where F: Fn(Vec<String>) -> String,{
+    where F: Fn(Vec<String>) -> Vec<String>{
         for stream in self.listener.incoming() {
             let stream = stream.unwrap();
             let request = Self::get_raw_request(&stream);
             //visitor pattern ? 
             let response = f(request) ;
-            Self::send_raw_response(stream, &response) ;
+            Self::send_raw_response(stream, &response[0], &response[1]) ;
         }
     }
 
@@ -36,8 +35,8 @@ impl server {
         return http_request; 
     }
 
-    pub fn send_raw_response(mut stream: TcpStream, response :&String){
-        let status_line = "HTTP/1.1 200 OK";
+    pub fn send_raw_response(mut stream: TcpStream, response :&String, status_code: &str){
+        let status_line = format!("HTTP/1.1 {} OK", status_code);
         let length = response.len();
         let response = format!("{status_line}\r\nContent-Length: {length}\r\n\r\n{response}");
         stream.write_all(response.as_bytes()).unwrap()

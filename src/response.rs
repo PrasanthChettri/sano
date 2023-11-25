@@ -23,26 +23,20 @@ impl Response {
     }
 
     pub fn ok(val: String, r_type: ResponseType, status_code: Option<String>) -> Self {
-            let http_status: Result<String, String> =  match status_code {
-                Some(code)=> Ok(code),
-                None => Ok(String::from("200"))
-            };
+            let http_status: Result<String, String> = Ok(status_code.unwrap_or_else(||String::from("200")));
             Self::new( val, r_type, http_status)
     }
 
 
     pub fn err(val: String, r_type: ResponseType, status_code: Option<String>) -> Self{
-            let http_status: Result<String, String> =  match status_code {
-                Some(code)=> Ok(code),
-                None => Ok(String::from("403"))
-            };
+            let http_status: Result<String, String> = Ok(status_code.unwrap_or_else(||String::from("403")));
             Self::new( val, r_type, http_status)
     }
 
-    pub fn send(&self) -> String {
+    pub fn send(&self) -> Vec<String> {
             match self.r_type {
-                    ResponseType::Raw => self.val.clone(), 
-                    ResponseType::HTML => Self::send_html_response(&self.val)
+                    ResponseType::Raw => vec![self.val.clone(), self.http_status.clone().unwrap()],
+                    ResponseType::HTML => vec![Self::send_html_response(&self.val), self.http_status.clone().unwrap()]
             }
         }
 
