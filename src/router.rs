@@ -1,10 +1,11 @@
 use std::{collections::HashMap, string::ParseError};
 use url::Url;
+use crate::types::*;
 
 use crate::response::{ Response, ResponseType } ;
 
-
 pub struct Router {
+    root_url: String,
     route_registry: RouteRegistry,
 }
 
@@ -18,7 +19,7 @@ pub enum Method {
 
 pub struct Route {
     url: String,
-    exec: Box<dyn Fn(String) -> Response>,
+    exec: Box<dyn Fn(String, HashMap<String, String>) -> Response>,
     query_params: Option<HashMap<String, String>>,
 }
 
@@ -31,7 +32,7 @@ pub struct RouteRegistry {
 }
 
 // mut stream: TcpStream, f: 
-pub fn get_routes_for_method(routes: &Routes, url: &str) -> Response{
+pub fn get_routes_for_method(routes: &Routes, url: &str, query_params: HashMap<String, String>) -> Response{
     for route in &routes.routes {
         if route.url.eq(url) {
             return (route.exec)(String::from(url)) ;
@@ -50,29 +51,20 @@ impl RouteRegistry {
 }
 
 impl Router {
-    pub fn new() -> Self {
+    pub fn new(root_url: &String) -> Self {
         Router {
             route_registry: RouteRegistry::new() ,
+            root_url: root_url.clone()
         }
     }
 
-    pub fn register(&mut self, url: &str, method: Method, exec: fn(String) -> Response) {
-        let route_url = String::from(url);
-        let parsed_url = Url::parse(url);
-        let query_pairs = match parsed_url{
-            //TODO: WTF IS A BORROWWWWWW
-            Ok(params) => params.query_pairs(),
-            Err(e) => panic!("OH NO :___")
-        };
-        let query_params = query_pairs.fold(
-                    HashMap::new(), |mut acc, (key, value)| {
-                    acc.insert(key.into_owned(), value.into_owned());
-                    acc
-        });
+    pub fn register(&mut self, url: &str, method: Method, exec: fn(String, &HashMap<String, String>) -> Response) {
+        let mut a: HashMap<String, String> = HashMap::new();
+        a.insert(String::from("a"), String::from("1"));
         let route = Route {
-            url: route_url,
-            exec:  Box::new(move | ur: String| exec(ur)),
-            query_params: Some(query_params)
+            url: String::from(url),
+            exec:  Box::new(move | ur: String, params: &HashMap<String, String>| exec(ur, params)),
+            query_params: Some(a)
         };
 
         match self.route_registry.data.get_mut(&method) {
@@ -88,7 +80,22 @@ impl Router {
 
     pub fn route(&self, http_request: &Vec<String>) -> Response {
         let status_line = &http_request[0];
+
         let status: Vec<_> = status_line.split(" ").collect();
+        let request_url = &status[1] ;
+        let complete_url = String::from(format!("{}{}", self.root_url.as_str(), request_url));
+        let binding = Url::parse(&complete_url).unwrap();
+        let query_pairs = binding.query_pairs();
+        let query_params = query_pairs.fold(
+                    HashMap::new(), |mut acc, (key, value)| {
+                    acc.insert(key.into_owned(), value.into_owned());
+                    acc
+        });
+
+        let partial_url = binding.path();
+        print!("{}",partial_url);
+        print!("________");
+
         let method  = match status[0] {
             "GET" => Method::GET, 
             "POST" => Method::POST, 
@@ -97,7 +104,7 @@ impl Router {
             _ => panic!("OH NO :-(")
         };
         return match self.route_registry.data.get(&method) { 
-            Some(routes) => get_routes_for_method(routes, &status[1]) ,
+            Some(routes) => get_routes_for_method( routes,&partial_url, query_params) ,
             None => Response::ok(String::from("404"), ResponseType::Raw, None)
         } ;
     }

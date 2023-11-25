@@ -2,6 +2,9 @@ mod response ;
 mod server ;
 mod router ;
 mod sano;
+mod types;
+use std::collections::HashMap;
+
 use crate::response::* ;
 
 fn main() {
@@ -19,9 +22,9 @@ fn main() {
     );
     */
     api.router.register(
-        "/calculate?op=1+1", 
+        "7879/calculate", 
         router::Method::GET,
-        | url | {
+        | url , query_params: &HashMap<String, String>| {
             Response::ok(url, ResponseType::Raw, None)
         }
     );

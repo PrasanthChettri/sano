@@ -5,13 +5,14 @@ use std::{
 
 pub struct Server {
     listener : TcpListener,
+    pub url: String,
 }
 
 impl Server {
     pub fn new(ipaddr : &String , port: u16) -> Self{
-        let address = format!("{}:{}", ipaddr, port);
-        let listener = TcpListener::bind(address).expect("Failed to bind to the specified address");
-        Self { listener }
+        let address = String::from(format!("{}:{}", ipaddr, port)) ;
+        let listener = TcpListener::bind(address.clone()).expect("Failed to bind to the specified address");
+        Self { listener, url: address }
     }
 
     pub fn run_server<F> (&self, f: F) 
