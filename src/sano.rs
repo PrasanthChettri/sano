@@ -11,7 +11,7 @@ impl Sano {
     
     pub fn new(ipaddr: &str, port: u16) -> Self {
         let server = server::Server::new(&String::from(ipaddr), port);
-        let router = router::Router::new(&server.url.clone());
+        let router = router::Router::new(&String::from(ipaddr));
         Sano { server, router }
     }
 
