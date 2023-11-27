@@ -18,7 +18,7 @@ fn main() {
         let query_params = query_params.unwrap();
         let safe_extract = | s : &str, d: &i32 | {
                             query_params.get(s).unwrap_or(&d.to_string()).
-                            trim().parse().unwrap_or(1)
+                            trim().parse().unwrap_or(0)
         };
         let a :i32= safe_extract("a", &0);
         let b :i32= safe_extract("b", &0);
@@ -27,3 +27,22 @@ fn main() {
 
     api.run_server() ;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

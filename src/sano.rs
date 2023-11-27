@@ -1,3 +1,5 @@
+use tiny_http::Request;
+
 use crate::router;
 use crate::server;
 
@@ -15,12 +17,12 @@ impl Sano {
         Sano { server, router }
     }
 
-    pub fn handle_connection(router: &router::Router, raw_request: Vec<String> ) -> Vec<String> {
-        router.route(&raw_request).send()
+    pub fn handle_connection(router: &router::Router, request : &Request ) -> Vec<String> {
+        router.route(request).send()
     }
 
     pub fn run_server(&self) {
-        self.server.run_server(| request | Self::handle_connection(&self.router, request) )
+        self.server.run_server(| request | Self::handle_connection(&self.router, &request) )
     }
 
 }

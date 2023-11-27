@@ -1,46 +1,34 @@
 use std::{
-    io::{prelude::*, BufReader},
-    net::{TcpListener, TcpStream},
+};
+use tiny_http::{
+    Server as TinyHttpServer,
+    Request,
+    Response,
 };
 
 pub struct Server {
-    listener : TcpListener,
+    server: TinyHttpServer,
     pub url: String,
 }
 
 impl Server {
-    pub fn new(ipaddr : &String , port: u16) -> Self{
-        let address = String::from(format!("{}:{}", ipaddr, port)) ;
-        let listener = TcpListener::bind(address.clone()).expect("Failed to bind to the specified address");
-        Self { listener, url: address }
+    pub fn new(ipaddr: &str, port: u16) -> Self {
+        let address = format!("{}:{}", ipaddr, port);
+        let server = TinyHttpServer::http(address.clone()).expect("Failed to bind to the specified address");
+        Self { server, url: address }
     }
 
-    pub fn run_server<F> (&self, f: F) 
-    where F: Fn(Vec<String>) -> Vec<String>{
-        for stream in self.listener.incoming() {
-            let stream = stream.unwrap();
-            let request = Self::get_raw_request(&stream);
-            //visitor pattern ? 
-            let response = f(request) ;
-            Self::send_raw_response(stream, &response[0], &response[1]) ;
+    pub fn run_server<F>(&self, f: F)
+    where
+        F: Fn(&Request) -> Vec<String> 
+    {
+        for request in self.server.incoming_requests() {
+            let response = f(&request);
+            let status_code = (&response[1]).parse::<u16>().unwrap(); // Parse status code as u16
+            let response = &response[0];
+            let tiny_response = Response::from_string(response)
+                                .with_status_code(status_code);
+            let _ = request.respond(tiny_response);
         }
     }
-
-    pub fn get_raw_request(stream: &TcpStream) -> Vec<String> {
-        let buf_reader = BufReader::new(stream);
-        let http_request: Vec<_> = buf_reader
-            .lines()
-            .map(|result| result.unwrap())
-            .take_while(|line| !line.is_empty())
-            .collect();
-        return http_request; 
-    }
-
-    pub fn send_raw_response(mut stream: TcpStream, response :&String, status_code: &str){
-        let status_line = format!("HTTP/1.1 {} OK", status_code);
-        let length = response.len();
-        let response = format!("{status_line}\r\nContent-Length: {length}\r\n\r\n{response}");
-        stream.write_all(response.as_bytes()).unwrap()
-    }
 }
-

@@ -1,7 +1,10 @@
-use std::{ collections::HashMap };
+use std::{ collections::HashMap, str::FromStr };
 use url::Url;
+use tiny_http::{
+    Request as TinyHttpRequest,
+};
 
-use crate::{response::{ Response, ResponseType }, request::{Method, Request, self}} ;
+use crate::{response::{ Response, ResponseType, ResponseBldr }, request::{Method, Request, self}} ;
 
 pub struct Router {
     root_url: String,
@@ -30,11 +33,11 @@ pub fn get_routes_for_method(routes: &Routes, request: Request) -> Response{
             return (route.exec)(&request) ;
         }
     }
-    return Response::err(String::from("404"), ResponseType::Raw);
+    return ResponseBldr::new().http_status(404).r_type(ResponseType::Raw).give()
 }
 
 impl RouteRegistry {
-    //route registry is mutable by default
+    //route registry is mutable
     pub fn new() -> Self{
         RouteRegistry {
             data : HashMap::new()
@@ -54,59 +57,38 @@ impl Router {
     where
     F: Fn(&Request) -> Response  + 'static
     {
-        let mut a: HashMap<String, String> = HashMap::new();
-        a.insert(String::from("a"), String::from("1"));
         let route = Route {
             url: String::from(url),
             exec: Box::new(move |request| exec(request)),
-            //query_params: Some(a),
         };
 
-        match self.route_registry.data.get_mut(&method) {
-            Some(routes) => routes.routes.push(route),
-            None => {
-                let routes = Routes {
-                    routes: vec![route],
-                };
-                self.route_registry.data.insert(method.clone(), routes);
-            }
-        }
+        self.route_registry
+            .data
+            .entry(method)
+            .or_insert_with(|| Routes {
+                routes: Vec::new(),
+            })
+            .routes
+            .push(route);
+
     }
 
-    pub fn route(&self, http_request: &Vec<String>) -> Response {
-        let status_line = &http_request[0];
+    pub fn route(&self, http_request: &TinyHttpRequest) -> Response {
+        let complete_url = format!("http://{}{}", self.root_url, http_request.url());
 
-        let status: Vec<_> = status_line.split(" ").collect();
-        let request_url = &status[1] ;
-        let complete_url = String::from(format!("http://{}{}", self.root_url.as_str(), request_url));
-        let binding = Url::parse(&complete_url) ;
-        if binding.is_err() {
-            return Response::err(String::from("404"), ResponseType::Raw);
+        if let Ok(binding) = Url::parse(&complete_url) {
+            let query_params: HashMap<_, _> = binding.query_pairs().into_owned().collect();
+            let partial_url = binding.path();
+            let method = Method::from_str(http_request.method().as_str());
+
+            if let Ok(method) = method {
+                let request = Request::new(partial_url, Some(&query_params), &method);
+                if let Some(routes) = self.route_registry.data.get(request.get_method()) {
+                    return get_routes_for_method(routes, request);
+                }
+            }
+            return ResponseBldr::new().http_status(404).r_type(ResponseType::Raw).give()
         }
-        let binding = binding.unwrap();
-        let query_pairs = binding.query_pairs();
-        let query_params = query_pairs.fold(
-                    HashMap::new(), |mut acc, (key, value)| {
-                    acc.insert(key.into_owned(), value.into_owned());
-                    acc
-        });
-
-        let partial_url = binding.path();
-
-
-        let method  = match status[0] {
-            "GET" => Method::GET, 
-            "POST" => Method::POST, 
-            "PUST" => Method::PUT,
-            "DELETE" =>Method::DELETE, 
-            _ => panic!("OH NO :-(")
-        };
-
-        let request = Request::new(partial_url, Some(&query_params) , &method);
-
-        return match self.route_registry.data.get(request.get_method()) { 
-            Some(routes) => get_routes_for_method(routes, request) ,
-            None => Response::err(String::from("404"), ResponseType::Raw)
-        } ;
+        return Response::err(String::from(""), ResponseType::Raw);
     }
 }

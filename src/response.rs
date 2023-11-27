@@ -38,7 +38,7 @@ impl Response {
 
     pub fn ok(val: String, r_type: ResponseType) -> Self { Self::new(val, r_type, 200) }
 
-    pub fn err(val: String, r_type: ResponseType) -> Self { Self::new(val, r_type, 403) }
+    pub fn err(val: String, r_type: ResponseType) -> Self { Self::new(val, r_type, 400) }
 
     pub fn send(self) -> Vec<String> {
             let status = (self.http_status).to_string();

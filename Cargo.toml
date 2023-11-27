@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 url = "2.2.2"
+tiny_http = "0.12.0"
