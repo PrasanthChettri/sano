@@ -37,20 +37,23 @@ impl FromStr for Method {
 
 
 #[derive(Debug, Clone)]
-pub struct Request<'a> {
-    query_params: Option<&'a HashMap<String, String>>,
-    url: &'a str,
-    method: &'a Method,
+pub struct Request {
+    query_params: Option<HashMap<String, String>>,
+    url: String,
+    body: Option<String>,
+    method: Method
 }
 
-impl<'a> Request<'a>{
-    pub fn new(url: &'a str, query_params: Option<&'a HashMap<String, String>>, method: &'a Method) -> Self{
-        return Self { url, query_params, method }
+impl Request{
+    pub fn new(url: String, query_params: Option<HashMap<String, String>>, method:  Method, body: Option<String>) -> Self{
+        return Self { url, query_params, method, body }
     }
 
-    pub fn get_method(&self) -> &'a Method { &self.method }
+    pub fn get_method(&self) -> &Method { &self.method }
 
-    pub fn get_url(&self) -> &'a str { &self.url }
+    pub fn get_url(&self) -> &String { &self.url }
 
-    pub fn get_qparams(&self) -> Option<&'a HashMap<String, String>> { self.query_params }
+    pub fn get_body(&self) -> &Option<String> { &self.body }
+
+    pub fn get_qparams(&self) -> &Option<HashMap<String, String>> { &self.query_params }
 }

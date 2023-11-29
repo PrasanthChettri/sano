@@ -40,20 +40,17 @@ impl Response {
 
     pub fn err(val: String, r_type: ResponseType) -> Self { Self::new(val, r_type, 400) }
 
-    pub fn send(self) -> Vec<String> {
-            let status = (self.http_status).to_string();
-            let response = match &self.r_type {
-                ResponseType::HTML => Self::send_html_response(&self.val),
+    pub fn send_response_body(self) -> String {
+        match self.r_type {
                 ResponseType::Raw => self.val,
-            };
-            vec![response, status]
-    }
-
-    pub fn send_html_response(fname :&str) -> String {
-        match fs::read_to_string(fname) {
-            Ok(content) => content, 
-            Err(e) => panic!("FILE NOT FOUND")
+                ResponseType::HTML => {
+                    match fs::read_to_string(self.val) {
+                        Ok(content) => content, 
+                        Err(e) => panic!("FILE NOT FOUND")
+                    }
+            }
         }
+
     }
 }
 
