@@ -32,7 +32,7 @@ impl Default for Response{
 
 
 impl Response {
-    pub fn new(val: String, r_type: ResponseType, http_status: u16) -> Self{
+    pub fn new(val: String , r_type: ResponseType, http_status: u16) -> Self{
         Self { val, r_type , http_status }
     }
 
@@ -81,13 +81,4 @@ impl ResponseBldr {
     pub fn err(self) -> ResponseBldr { self.http_status(403) }
 
     pub fn give(self) -> Response { self.response }
-}
-
-fn main(){
-    let a = ResponseBldr::new()
-        .val("HI".to_string())
-        .r_type(ResponseType::HTML)
-        .http_status(200)
-        .give();
-    dbg!("{}", a);
 }

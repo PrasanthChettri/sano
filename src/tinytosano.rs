@@ -29,8 +29,8 @@ pub fn serialize_from_tiny_http(tinyrequest: &mut TinyHttpRequest) -> sanoReques
         return request;
 }
 pub fn respond_with_tiny_http(sano_response: SaonResponse) -> TinyHttpResponse<std::io::Cursor<Vec<u8>>> {
-        let status = (sano_response.http_status).to_string();
+        let status = sano_response.http_status ;
         let response = &sano_response.send_response_body();
         TinyHttpResponse::from_string(response)
-                    .with_status_code(status.parse::<u16>().unwrap())
+                    .with_status_code(status)
 }

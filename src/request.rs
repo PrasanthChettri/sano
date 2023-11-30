@@ -1,3 +1,6 @@
+use serde_json::{Result, Value};
+use serde::{Deserialize, Serialize, de::DeserializeOwned};
+
 
 use std::collections::HashMap;
 use std::str::FromStr;
@@ -14,25 +17,6 @@ pub enum Method {
     HEAD,
     TRACE,
     CONNECT,
-}
-
-impl FromStr for Method {
-    type Err = String;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.to_uppercase().as_str() {
-            "GET" => Ok(Method::GET),
-            "POST" => Ok(Method::POST),
-            "PUT" => Ok(Method::PUT),
-            "DELETE" => Ok(Method::DELETE),
-            "PATCH" => Ok(Method::PATCH),
-            "OPTIONS" => Ok(Method::OPTIONS),
-            "HEAD" => Ok(Method::HEAD),
-            "TRACE" => Ok(Method::TRACE),
-            "CONNECT" => Ok(Method::CONNECT),
-            _ => Err(format!("Invalid HTTP method: {}", s)),
-        }
-    }
 }
 
 
@@ -53,7 +37,14 @@ impl Request{
 
     pub fn get_url(&self) -> &String { &self.url }
 
-    pub fn get_body(&self) -> &Option<String> { &self.body }
+    pub fn get_raw_body(&self) -> &Option<String> { &self.body }
+    
+    pub fn get_body<T: DeserializeOwned>(&self) -> T { json::<T>(&self.body.clone().unwrap_or("".to_string())) }
 
     pub fn get_qparams(&self) -> &Option<HashMap<String, String>> { &self.query_params }
+}
+
+fn json<T: DeserializeOwned>(data: &String)  -> T {
+    let v: T = serde_json::from_str(&data).unwrap();
+    return v ;
 }

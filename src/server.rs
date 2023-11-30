@@ -34,7 +34,6 @@ impl Server {
     {
         for mut request in self.server.incoming_requests() {
             let sano_request = serialize_from_tiny_http(&mut request);
-            dbg!("{}", &sano_request);
             let response = f(&sano_request);
             let tiny_response = respond_with_tiny_http(response);
             let _ = request.respond(tiny_response);
