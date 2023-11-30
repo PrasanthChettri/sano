@@ -17,6 +17,7 @@ pub enum Method {
     HEAD,
     TRACE,
     CONNECT,
+    NONSTANDARD,
 }
 
 
@@ -41,7 +42,12 @@ impl Request{
     
     pub fn get_body<T: DeserializeOwned>(&self) -> T { json::<T>(&self.body.clone().unwrap_or("".to_string())) }
 
-    pub fn get_qparams(&self) -> &Option<HashMap<String, String>> { &self.query_params }
+    pub fn get_qparams(&self) -> Option<&HashMap<String, String>> { 
+        match &self.query_params  {
+            Some(e) => Some(&e),
+            None => None
+        }
+    }
 }
 
 fn json<T: DeserializeOwned>(data: &String)  -> T {

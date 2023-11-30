@@ -11,21 +11,24 @@ use serde::{Serialize, Deserialize};
 
 use crate::response::* ;
 
+
 #[derive(Serialize, Deserialize, Default, Debug)]
 struct Person {
-    a: i32,
-    b: i32,
+    name: String,
 }
 
 fn main() {
+    let mut names  = vec!["SUII".to_string(), "SUIII".to_string()] ;
     let mut api = sano::Sano::new("localhost", 7879) ;
-    api.router.register("/calculate", request::Method::GET, |request| {
-        let request_data = request.get_body::<Person>();
-        let a = request_data.a;
-        let b = request_data.b;
-        ResponseBldr::new().ok().val((a+b).to_string()).give()
+    api.router.register("/find_name", request::Method::GET, move|request| {
+        let data = request.get_body::<Person>();
+        let name = data.name ;
+        let response = ResponseBldr::new()  ;
+        match names.contains(&name) {
+            true =>  response.err().give() ,
+            false => response.ok().val("FOUND".to_string()).give() ,
+        }
     });
-
     api.run_server() ;
 }
 

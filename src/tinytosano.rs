@@ -2,13 +2,14 @@ use std::collections::HashMap;
 
 use crate::{
     Response as SaonResponse,
-    request::{Request as sanoRequest, Method},
+    request::{Request as sanoRequest, Method as SanoMethod},
     sano
 };
 
 use tiny_http::{
     Server as TinyHttpServer,
     Request as TinyHttpRequest,
+    Method as TinyHttpMethod,
     Response as TinyHttpResponse,
     StatusCode, HeaderField
 };
@@ -24,7 +25,7 @@ pub fn serialize_from_tiny_http(tinyrequest: &mut TinyHttpRequest) -> sanoReques
         let binding =  Url::parse(&complete_url).unwrap();
         let query_params: HashMap<_, _> = binding.query_pairs().into_owned().collect();
         let partial_url = String::from(binding.path());
-        let method = Method::GET;//tinyrequest.method().as_str());
+        let method = from_tiny_http_method(tinyrequest.method());
         let request = sanoRequest::new(partial_url, Some(query_params), method, Some(body));
         return request;
 }
@@ -33,4 +34,20 @@ pub fn respond_with_tiny_http(sano_response: SaonResponse) -> TinyHttpResponse<s
         let response = &sano_response.send_response_body();
         TinyHttpResponse::from_string(response)
                     .with_status_code(status)
+}
+
+// Static function for conversion
+pub fn from_tiny_http_method(tiny_http_method: &TinyHttpMethod) -> SanoMethod {
+    match tiny_http_method {
+        TinyHttpMethod::Get => SanoMethod::GET,
+        TinyHttpMethod::Post => SanoMethod::POST,
+        TinyHttpMethod::Put => SanoMethod::PUT,
+        TinyHttpMethod::Delete => SanoMethod::DELETE,
+        TinyHttpMethod::Patch => SanoMethod::PATCH,
+        TinyHttpMethod::Options => SanoMethod::OPTIONS,
+        TinyHttpMethod::Head => SanoMethod::HEAD,
+        TinyHttpMethod::Trace => SanoMethod::TRACE,
+        TinyHttpMethod::Connect => SanoMethod::CONNECT,
+        _ =>SanoMethod::NONSTANDARD,
+    }
 }
