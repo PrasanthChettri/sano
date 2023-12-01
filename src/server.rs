@@ -33,8 +33,12 @@ impl Server {
         F: Fn(&sanoRequest::Request) -> SaonResponse
     {
         for mut request in self.server.incoming_requests() {
-            let sano_request = serialize_from_tiny_http(&mut request);
-            let response = f(&sano_request);
+            //getContentType(&request);
+            let sano_request = match serialize_from_tiny_http(&mut request){
+                Ok(e) => e ,
+                Err(e) => panic!("EE"),
+            };
+            let response = f(&sano_request) ;
             let tiny_response = respond_with_tiny_http(response);
             let _ = request.respond(tiny_response);
         }

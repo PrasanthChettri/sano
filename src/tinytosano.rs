@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::{
     Response as SaonResponse,
-    request::{Request as sanoRequest, Method as SanoMethod},
+    request::{Request as sanoRequest, Method as SanoMethod, Body},
     sano
 };
 
@@ -15,20 +15,53 @@ use tiny_http::{
 };
 use url::Url;
 
-pub fn serialize_from_tiny_http(tinyrequest: &mut TinyHttpRequest) -> sanoRequest {
-        let body = {
-            let mut body = Vec::new();
-            tinyrequest.as_reader().read_to_end(&mut body).unwrap();
-            String::from_utf8_lossy(&body).into_owned()
-        };
-        let complete_url = format!("http://localhost:7879{}", tinyrequest.url());
-        let binding =  Url::parse(&complete_url).unwrap();
-        let query_params: HashMap<_, _> = binding.query_pairs().into_owned().collect();
-        let partial_url = String::from(binding.path());
-        let method = from_tiny_http_method(tinyrequest.method());
-        let request = sanoRequest::new(partial_url, Some(query_params), method, Some(body));
-        return request;
+
+pub fn getContentType(request: &TinyHttpRequest, string_body: String) -> Body {
+    dbg!("{}", request.headers());
+    for header in request.headers() {
+        if header.field.equiv("Content-Type"){
+            let ctype = header.value.to_string() ;
+            dbg!("{}", &ctype);
+            if ctype == "application/json" {
+                return Body::Json(string_body);
+            }
+            else if ctype.starts_with("multipart/form-data") {
+                return Body::Form(string_body);
+            }
+            else if ctype.starts_with("application/x-www-form-urlencoded") {
+                return Body::FormUrlEncoded(string_body);
+            }
+            else if ctype.starts_with("text/plain") {
+                return Body::Text(string_body);
+            }
+            else {
+                todo!();
+            }
+        }
+    }
+    Body::Nil
 }
+pub fn serialize_from_tiny_http(tinyrequest: &mut TinyHttpRequest) -> Result<sanoRequest, Box<dyn std::error::Error>> {
+    let mut body = Vec::new();
+    tinyrequest.as_reader().read_to_end(&mut body)?;
+
+    let body = String::from_utf8_lossy(&body).into_owned();
+    let body = getContentType(&tinyrequest, body.clone());
+
+    let complete_url = format!("http://localhost:7879{}", tinyrequest.url());
+    let binding = Url::parse(complete_url.as_ref())?;
+
+    let query_params: HashMap<_, _> = binding.query_pairs().into_owned().collect() ;
+
+
+    let partial_url = binding.path().to_string() ;
+    let method = from_tiny_http_method(tinyrequest.method());
+
+    Ok(
+        sanoRequest::new(partial_url, query_params, method, body)
+    )
+}
+
 pub fn respond_with_tiny_http(sano_response: SaonResponse) -> TinyHttpResponse<std::io::Cursor<Vec<u8>>> {
         let status = sano_response.http_status ;
         let response = &sano_response.send_response_body();

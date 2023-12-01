@@ -18,16 +18,22 @@ struct Person {
 }
 
 fn main() {
-    let mut names  = vec!["SUII".to_string(), "SUIII".to_string()] ;
+    let names  = vec!["SUII".to_string(), "SUIII".to_string()] ;
     let mut api = sano::Sano::new("localhost", 7879) ;
+
     api.router.register("/find_name", request::Method::GET, move|request| {
-        let data = request.get_body::<Person>();
-        let name = data.name ;
-        let response = ResponseBldr::new()  ;
-        match names.contains(&name) {
-            true =>  response.err().give() ,
-            false => response.ok().val("FOUND".to_string()).give() ,
+        match request.get_body::<Person>() {
+            Ok(Some(person)) => {
+                let response = ResponseBldr::new();
+                match names.contains(&person.name) {
+                    true => response.err().give(),
+                    false => response.ok().val("FOUND".to_string()).give(),
+                }
+            }
+            Ok(None) => Response::err("NOT FOUND".to_string(), ResponseType::Raw),
+            Err(_) => Response::err("Error parsing request body".to_string(), ResponseType::Raw),
         }
+
     });
     api.run_server() ;
 }
