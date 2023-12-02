@@ -17,11 +17,9 @@ use url::Url;
 
 
 pub fn getContentType(request: &TinyHttpRequest, string_body: String) -> Body {
-    dbg!("{}", request.headers());
     for header in request.headers() {
         if header.field.equiv("Content-Type"){
             let ctype = header.value.to_string() ;
-            dbg!("{}", &ctype);
             if ctype == "application/json" {
                 return Body::Json(string_body);
             }
@@ -46,7 +44,7 @@ pub fn serialize_from_tiny_http(tinyrequest: &mut TinyHttpRequest) -> Result<san
     tinyrequest.as_reader().read_to_end(&mut body)?;
 
     let body = String::from_utf8_lossy(&body).into_owned();
-    let body = getContentType(&tinyrequest, body.clone());
+    let body = getContentType(&tinyrequest, body);
 
     let complete_url = format!("http://localhost:7879{}", tinyrequest.url());
     let binding = Url::parse(complete_url.as_ref())?;

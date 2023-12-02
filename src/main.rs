@@ -5,7 +5,7 @@ mod sano;
 mod types;
 mod request;
 mod tinytosano;
-use std::collections::HashMap;
+use std::{collections::HashMap, rc::Rc};
 
 use serde::{Serialize, Deserialize};
 
@@ -17,42 +17,26 @@ struct Person {
     name: String,
 }
 
-fn main() {
-    let names  = vec!["SUII".to_string(), "SUIII".to_string()] ;
-    let mut api = sano::Sano::new("localhost", 7879) ;
 
-    api.router.register("/find_name", request::Method::GET, move|request| {
+fn main() {
+    let mut api = sano::Sano::new("localhost", &7879) ;
+
+    let names = vec![ "NAME1", "NAME2"] ;
+
+    api.router.register("/find_name", request::Method::GET, move |request| {
+
+        let ok_response : ResponseBldr = ResponseBldr::new().ok();
         match request.get_body::<Person>() {
-            Ok(Some(person)) => {
-                let response = ResponseBldr::new();
-                match names.contains(&person.name) {
-                    true => response.err().give(),
-                    false => response.ok().val("FOUND".to_string()).give(),
-                }
+            Ok(Some(person)) => 
+                match names.contains(&person.name.as_ref()) {
+                    true => ok_response.val("FOUND").give(),
+                    false => ok_response.val("NOT FOUND").give(),
             }
-            Ok(None) => Response::err("NOT FOUND".to_string(), ResponseType::Raw),
-            Err(_) => Response::err("Error parsing request body".to_string(), ResponseType::Raw),
+
+            Ok(None) => Response::err("NOT DATA", ResponseType::Raw),
+            Err(_) => Response::err("Error parsing request body", ResponseType::Raw),
         }
 
     });
     api.run_server() ;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

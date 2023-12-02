@@ -1,4 +1,3 @@
-	
 use std::fs ;
 
 #[derive(Debug, Clone, Copy)]
@@ -36,9 +35,9 @@ impl Response {
         Self { val, r_type , http_status }
     }
 
-    pub fn ok(val: String, r_type: ResponseType) -> Self { Self::new(val, r_type, 200) }
+    pub fn ok(val: &str, r_type: ResponseType) -> Self { Self::new(val.to_string(), r_type, 200) }
 
-    pub fn err(val: String, r_type: ResponseType) -> Self { Self::new(val, r_type, 400) }
+    pub fn err(val: &str, r_type: ResponseType) -> Self { Self::new(val.to_string(), r_type, 400) }
 
     pub fn send_response_body(self) -> String {
         match self.r_type {
@@ -61,8 +60,8 @@ pub struct ResponseBldr {
 impl ResponseBldr {
     pub fn new() -> Self { ResponseBldr { response:  Response::default() } }
 
-    pub fn val(mut self, val: String) -> ResponseBldr {
-        self.response.val = val;
+    pub fn val(mut self, val: &str) -> ResponseBldr {
+        self.response.val = val.to_string();
         self
     }
 
@@ -78,7 +77,7 @@ impl ResponseBldr {
 
     pub fn ok(self) -> ResponseBldr { self.http_status(200) }
 
-    pub fn err(self) -> ResponseBldr { self.http_status(403) }
+    pub fn err(self) -> ResponseBldr { self.http_status(400) }
 
     pub fn give(self) -> Response { self.response }
 }

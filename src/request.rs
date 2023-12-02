@@ -1,9 +1,14 @@
-use serde_json::{Result, Value};
+use serde_urlencoded::{de as serde_urlencoded } ;
+use serde_urlencoded::{Error as UrlEncodedError } ;
+use serde_json::{Result as JsonResult, Value};
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
+use std::error::Error;
+
 
 
 use std::collections::HashMap;
 use std::str::FromStr;
+pub struct SerializationError(String);
 
 
 #[derive(Eq, Hash, PartialEq, Clone, Debug)]
@@ -58,11 +63,32 @@ impl Request{
             _ => todo!("")
         }
     }
+
+    fn deserialize_form_urlencoded<T: DeserializeOwned>(data: &str) -> Result<Option<T>, SerializationError> {
+        // Deserialize the form data using serde_urlencoded
+        serde_urlencoded::from_str(data)
+            .map(Some)
+            .map_err(|e| {
+                dbg!(data);
+                SerializationError(e.to_string())
+            })
+    }
     
-    pub fn get_body<T: DeserializeOwned>(&self) -> Result<Option<T>> {
-        match self.get_raw_body() {
-            None => Ok(None), 
-            Some(d) => serde_json::from_str(d).map(Some)
+    pub fn get_body<T: DeserializeOwned>(&self) -> Result<Option<T>, SerializationError> {
+        match &self.body {
+            Body::Nil => Ok(None), 
+            Body::Form(d) => {
+                todo!("THIS DOES NOT WORK FORM DATA IS TRICKYYY");
+                match d.split("\r\n\r\n").nth(1) {
+                    Some(e) =>  Self::deserialize_form_urlencoded(d),
+                    None => Ok(None),
+                }
+            }
+            Body::FormUrlEncoded(d) => Self::deserialize_form_urlencoded(d.as_ref()),
+            Body::Json(d) => serde_json::from_str(d).
+                                                    map(Some).
+                                                    map_err(|e| SerializationError(e.to_string())),
+            _ => todo!()
         }
     }
 

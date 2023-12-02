@@ -3,16 +3,16 @@ use crate::router;
 use crate::server;
 use crate::request::Request;
 
-pub struct Sano {
-    pub router: router::Router,
+pub struct Sano<'a> {
+    pub router: router::Router<'a>,
     server: server::Server
 }
 
-impl Sano {
+impl<'a> Sano<'a> {
 
-    pub fn new(ipaddr: &str, port: u16) -> Self {
-        let server = server::Server::new(&String::from(ipaddr), port);
-        let router = router::Router::new(&String::from(ipaddr));
+    pub fn new(ipaddr: &'static str, port: &u16) -> Self {
+        let server = server::Server::new(ipaddr, port);
+        let router = router::Router::new(ipaddr);
         Sano { server, router }
     }
 

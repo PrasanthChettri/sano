@@ -4,24 +4,24 @@ use crate::request::{Request, Method};
 
 use crate::response::{ Response, ResponseType, ResponseBldr };
 
-pub struct Router {
-    root_url: String,
-    route_registry: RouteRegistry,
+pub struct Router<'a> {
+    root_url: &'static str,
+    route_registry: RouteRegistry<'a>,
 }
 
 
-pub struct Route {
-    url: String,
+pub struct Route<'a> {
+    url: &'a str,
     exec: Box<dyn Fn(&Request) -> Response>,
     //query_params: Option<HashMap<String, String>>,
 }
 
-pub struct Routes {
-    routes: Vec<Route>,
+pub struct Routes<'a> {
+    routes: Vec<Route<'a>>,
 }
 
-pub struct RouteRegistry {
-    data: HashMap<Method, Routes>
+pub struct RouteRegistry<'a> {
+    data: HashMap<Method, Routes<'a>>
 }
 
 // mut stream: TcpStream, f: 
@@ -34,7 +34,7 @@ pub fn get_routes_for_method(routes: &Routes, request: &Request) -> Response{
     return ResponseBldr::new().http_status(404).r_type(ResponseType::Raw).give()
 }
 
-impl RouteRegistry {
+impl<'a> RouteRegistry<'a> {
     //route registry is mutable
     pub fn new() -> Self{
         RouteRegistry {
@@ -43,20 +43,20 @@ impl RouteRegistry {
     }
 }
 
-impl Router {
-    pub fn new(root_url: &String) -> Self {
+impl<'a> Router<'a> {
+    pub fn new(root_url: &'static str) -> Self {
         Router {
             route_registry: RouteRegistry::new() ,
-            root_url: root_url.clone()
+            root_url: root_url
         }
     }
 
-    pub fn register<F>(&mut self, url: &str, method: Method, exec: F)
+    pub fn register<F>(&mut self, url: &'a str, method: Method, exec: F)
     where
     F: Fn(&Request) -> Response  + 'static
     {
         let route = Route {
-            url: String::from(url),
+            url: url,
             exec: Box::new(move |request| exec(request)),
         };
 
