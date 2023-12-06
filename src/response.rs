@@ -1,5 +1,12 @@
 use std::fs ;
 
+use num_traits::PrimInt;
+
+
+pub trait ResponseSerializable {
+    fn serialze(self) -> Response;
+}
+
 #[derive(Debug, Clone, Copy)]
 pub enum ResponseType {
     HTML, 
@@ -29,6 +36,35 @@ impl Default for Response{
     }
 }
 
+impl ResponseSerializable for &str {
+    fn serialze(self) -> Response {
+        Response::new(self.to_string(), ResponseType::Raw, 200)
+    }
+}
+
+impl ResponseSerializable for String {
+    fn serialze(self) -> Response {
+        Response::new(self, ResponseType::Raw, 200)
+    }
+}
+
+
+ /*
+impl<T> ResponseSerializable for T
+    where
+    T: PrimInt,
+{
+    fn serialze(self) -> Response {
+        Response::new(self.to_string(), ResponseType::Raw, 200)
+    }
+} */
+
+impl ResponseSerializable for Response {
+    fn serialze(self) -> Response {
+        self
+    }
+}
+
 
 impl Response {
     pub fn new(val: String , r_type: ResponseType, http_status: u16) -> Self{
@@ -55,6 +91,12 @@ impl Response {
 
 pub struct ResponseBldr {
     response: Response,
+}
+
+impl ResponseSerializable for ResponseBldr {
+    fn serialze(self) -> Response {
+        self.give()
+    }
 }
 
 impl ResponseBldr {

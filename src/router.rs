@@ -2,7 +2,7 @@ use std::{ collections::HashMap, str::FromStr };
 use url::Url;
 use crate::request::{Request, Method};
 
-use crate::response::{ Response, ResponseType, ResponseBldr };
+use crate::response::{ Response, ResponseType, ResponseBldr, ResponseSerializable };
 
 pub struct Router<'a> {
     root_url: &'static str,
@@ -51,13 +51,19 @@ impl<'a> Router<'a> {
         }
     }
 
-    pub fn register<F>(&mut self, url: &'a str, method: Method, exec: F)
+    pub fn register<F, T>(&mut self, url: &'a str, method: Method, exec: F)
     where
-    F: Fn(&Request) -> Response  + 'static
+    F: Fn(&Request) -> T  + 'static,
+    T: ResponseSerializable
     {
         let route = Route {
             url: url,
-            exec: Box::new(move |request| exec(request)),
+            exec: Box::new(move |request|
+                {
+                    let response : T  = exec(request);
+                    response.serialze()
+                }
+            ),
         };
 
         self.route_registry
